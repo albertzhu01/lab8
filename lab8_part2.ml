@@ -6,7 +6,7 @@
 
 (* Objective:
 
-This lab practices concepts of functors. 
+This lab practices concepts of functors.
  *)
 
 (*======================================================================
@@ -103,28 +103,40 @@ module MakeStack (Element: SERIALIZE) : (STACK with type element = Element.t) =
     let empty : stack = []
 
     let push (el : element) (s : stack) : stack =
-      failwith "push not implemented"
+      el::s
 
     let pop_helper (s : stack) : (element * stack) =
-      failwith "pop_helper not implemented"
+      match s with
+      | [] -> raise Empty
+      | hd :: tl -> (hd, tl)
+
 
     let top (s : stack) : element =
-      failwith "top not implemented"
+      fst (pop_helper s)
 
     let pop (s : stack) : stack =
-      failwith "pop not implemented"
+      snd (pop_helper s)
 
-    let map (f : element -> element) (s : stack) : stack =
-      failwith "map not implemented"
+    let rec map (f : element -> element) (s : stack) : stack =
+      match s with
+      | [] -> []
+      | hd :: tl -> f hd :: map f tl
 
-    let filter (f : element -> bool) (s : stack) : stack =
-      failwith "filter not implemented"
+    let rec filter (f : element -> bool) (s : stack) : stack =
+      match s with
+      | [] -> []
+      | hd :: tl -> if f hd then hd :: filter f tl else filter f tl
 
-    let fold_left (f : 'a -> element -> 'a) (init : 'a) (s : stack) : 'a =
-      failwith "fold_left not implemented"
+    let rec fold_left (f : 'a -> element -> 'a) (init : 'a) (s : stack) : 'a =
+      match s with
+      | [] -> init
+      | hd :: tl -> fold_left f (f init hd) tl
 
-    let serialize (s : stack) : string =
-      failwith "serialize not implemented"
+    let rec serialize (s : stack) : string =
+      match s with
+      | [] -> ""
+      | [hd] -> Element.serialize hd
+      | hd :: tl ->  serialize tl ^ ":" ^ Element.serialize hd
   end ;;
 
 (*......................................................................
@@ -132,7 +144,11 @@ Exercise 1B: Now, make a module `IntStack` by applying the functor
 that you just defined to an appropriate module for serializing integers.
 ......................................................................*)
 
-module IntStack = struct end ;;
+module IntStack = MakeStack
+  (struct
+    type t = int
+    let serialize = string_of_int
+  end) ;;
 
 (*......................................................................
 Exercise 1C: Make a module `IntStringStack` that creates a stack whose
@@ -150,6 +166,8 @@ For this oversimplified serialization function, you may assume that
 the string will be made up of alphanumeric characters only.
 ......................................................................*)
 
-module IntStringStack = struct end ;;
-
-
+module IntStringStack = MakeStack
+  (struct
+    type t = int*string
+    let serialize (a, b) = "(" ^ string_of_int a ^ ",'" ^ b ^ "')"
+  end) ;;
